@@ -1,3 +1,4 @@
+import django
 import fnmatch
 import os
 from optparse import make_option
@@ -10,25 +11,46 @@ from compressor.cache import cache, get_mtime, get_mtime_cachekey
 
 class Command(NoArgsCommand):
     help = "Add or remove all mtime values from the cache"
-    option_list = NoArgsCommand.option_list + (
-        make_option('-i', '--ignore', action='append', default=[],
+
+    if django.VERSION < (1, 8):
+        option_list = NoArgsCommand.option_list + (
+            make_option('-i', '--ignore', action='append', default=[],
+                dest='ignore_patterns', metavar='PATTERN',
+                help="Ignore files or directories matching this glob-style "
+                    "pattern. Use multiple times to ignore more."),
+            make_option('--no-default-ignore', action='store_false',
+                dest='use_default_ignore_patterns', default=True,
+                help="Don't ignore the common private glob-style patterns 'CVS', "
+                    "'.*' and '*~'."),
+            make_option('--follow-links', dest='follow_links', action='store_true',
+                help="Follow symlinks when traversing the COMPRESS_ROOT "
+                    "(which defaults to STATIC_ROOT). Be aware that using this "
+                    "can lead to infinite recursion if a link points to a parent "
+                    "directory of itself."),
+            make_option('-c', '--clean', dest='clean', action='store_true',
+                help="Remove all items"),
+            make_option('-a', '--add', dest='add', action='store_true',
+                help="Add all items"),
+        )
+
+    def add_arguments(self, parser):
+        parser.add_argument('-i', '--ignore', action='append', default=[],
             dest='ignore_patterns', metavar='PATTERN',
             help="Ignore files or directories matching this glob-style "
-                "pattern. Use multiple times to ignore more."),
-        make_option('--no-default-ignore', action='store_false',
+                "pattern. Use multiple times to ignore more.")
+        parser.add_argument('--no-default-ignore', action='store_false',
             dest='use_default_ignore_patterns', default=True,
             help="Don't ignore the common private glob-style patterns 'CVS', "
-                "'.*' and '*~'."),
-        make_option('--follow-links', dest='follow_links', action='store_true',
+                "'.*' and '*~'.")
+        parser.add_argument('--follow-links', dest='follow_links', action='store_true',
             help="Follow symlinks when traversing the COMPRESS_ROOT "
                 "(which defaults to STATIC_ROOT). Be aware that using this "
                 "can lead to infinite recursion if a link points to a parent "
-                "directory of itself."),
-        make_option('-c', '--clean', dest='clean', action='store_true',
-            help="Remove all items"),
-        make_option('-a', '--add', dest='add', action='store_true',
-            help="Add all items"),
-    )
+                "directory of itself.")
+        parser.add_argument('-c', '--clean', dest='clean', action='store_true',
+            help="Remove all items")
+        parser.add_argument('-a', '--add', dest='add', action='store_true',
+            help="Add all items")
 
     def is_ignored(self, path):
         """

@@ -36,23 +36,42 @@ else:
 
 class Command(NoArgsCommand):
     help = "Compress content outside of the request/response cycle"
-    option_list = NoArgsCommand.option_list + (
-        make_option('--extension', '-e', action='append', dest='extensions',
+
+    if django.VERSION < (1, 8):
+        option_list = NoArgsCommand.option_list + (
+            make_option('--extension', '-e', action='append', dest='extensions',
+                help='The file extension(s) to examine (default: ".html", '
+                    'separate multiple extensions with commas, or use -e '
+                    'multiple times)'),
+            make_option('-f', '--force', default=False, action='store_true',
+                help="Force the generation of compressed content even if the "
+                    "COMPRESS_ENABLED setting is not True.", dest='force'),
+            make_option('--follow-links', default=False, action='store_true',
+                help="Follow symlinks when traversing the COMPRESS_ROOT "
+                    "(which defaults to STATIC_ROOT). Be aware that using this "
+                    "can lead to infinite recursion if a link points to a parent "
+                    "directory of itself.", dest='follow_links'),
+            make_option('--engine', default="django", action="store",
+                help="Specifies the templating engine. jinja2 or django",
+                dest="engine"),
+        )
+
+    def add_arguments(self, parser):
+        parser.add_argument('--extension', '-e', action='append', dest='extensions',
             help='The file extension(s) to examine (default: ".html", '
                 'separate multiple extensions with commas, or use -e '
-                'multiple times)'),
-        make_option('-f', '--force', default=False, action='store_true',
+                'multiple times)')
+        parser.add_argument('-f', '--force', default=False, action='store_true',
             help="Force the generation of compressed content even if the "
-                "COMPRESS_ENABLED setting is not True.", dest='force'),
-        make_option('--follow-links', default=False, action='store_true',
+                "COMPRESS_ENABLED setting is not True.", dest='force')
+        parser.add_argument('--follow-links', default=False, action='store_true',
             help="Follow symlinks when traversing the COMPRESS_ROOT "
                 "(which defaults to STATIC_ROOT). Be aware that using this "
                 "can lead to infinite recursion if a link points to a parent "
-                "directory of itself.", dest='follow_links'),
-        make_option('--engine', default="django", action="store",
+                "directory of itself.", dest='follow_links')
+        parser.add_argument('--engine', default="django", action="store",
             help="Specifies the templating engine. jinja2 or django",
-            dest="engine"),
-    )
+            dest="engine")
 
     requires_model_validation = False
 
